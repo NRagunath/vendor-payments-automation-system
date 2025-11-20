@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{email-templates/internal/base-internal-email :: html}">
+<body>
+    <div th:fragment="content">
+        <h3>Daily Payment Summary - <span th:text="${#temporals.format(#temporals.createToday(), 'EEEE, MMMM d, yyyy')}"></span></h3>
+        
+        <div class="alert alert-info">
+            <h4 style="margin-top: 0;">Daily Overview</h4>
+            <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px; margin: 5px 0;">
+                    <div style="font-size: 24px; font-weight: bold; color: #2c3e50;" th:text="${summary.totalPayments}">0</div>
+                    <div>Total Payments</div>
+                </div>
+                <div style="flex: 1; min-width: 200px; margin: 5px 0;">
+                    <div style="font-size: 24px; font-weight: bold; color: #27ae60;" th:text="${#numbers.formatDecimal(summary.totalAmount, 1, 2)} + ' ' + ${summary.currency}">0</div>
+                    <div>Total Amount</div>
+                </div>
+                <div style="flex: 1; min-width: 200px; margin: 5px 0;">
+                    <div style="font-size: 24px; font-weight: bold; color: #e67e22;" th:text="${summary.statusCounts != null ? summary.statusCounts.getOrDefault('PENDING', 0) : 0}">0</div>
+                    <div>Pending Approval</div>
+                </div>
+                <div style="flex: 1; min-width: 200px; margin: 5px 0;">
+                    <div style="font-size: 24px; font-weight: bold; color: #e74c3c;" th:text="${summary.statusCounts != null ? summary.statusCounts.getOrDefault('FAILED', 0) : 0}">0</div>
+                    <div>Failed</div>
+                </div>
+            </div>
+        </div>
+        
+        <h4>Payment Status</h4>
+        <div style="display: flex; gap: 20px; margin-bottom: 20px; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 300px;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Status</th>
+                            <th>Count</th>
+                            <th>Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="status : ${summary.statusCounts}">
+                            <td><span th:text="${status.key}" class="badge" th:classappend="${'badge-' + (status.key == 'COMPLETED' ? 'success' : (status.key == 'PENDING' ? 'warning' : (status.key == 'FAILED' ? 'danger' : 'info')))}"></span></td>
+                            <td th:text="${status.value}"></td>
+                            <td th:text="${summary.currencyBreakdown != null && summary.currencyBreakdown.containsKey(status.key) ? #numbers.formatDecimal(summary.currencyBreakdown.get(status.key), 1, 2) : 'N/A'}"></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="flex: 1; min-width: 300px;">
+                <div style="background-color: #f8f9fa; padding: 15px; border-radius: 4px; height: 100%;">
+                    <h5 style="margin-top: 0;">Quick Actions</h5>
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <a href="#" class="button" style="background-color: #3498db;">View Failed Payments</a>
+                        <a href="#" class="button" style="background-color: #2ecc71;">Approve Pending</a>
+                        <a href="#" class="button" style="background-color: #9b59b6;">Generate Report</a>
+                        <a href="#" class="button" style="background-color: #e67e22;">Create New Batch</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <h4>Recent Payments</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Time</th>
+                    <th>Reference</th>
+                    <th>Vendor</th>
+                    <th>Amount</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="payment : ${#lists.subList(summary.paymentDetails, 0, #lists.size(summary.paymentDetails) > 5 ? 5 : #lists.size(summary.paymentDetails))}">
+                    <td th:text="${#temporals.format(payment.timestamp, 'HH:mm')}"></td>
+                    <td th:text="${payment.paymentReference}"></td>
+                    <td th:text="${payment.vendorName}"></td>
+                    <td th:text="${#numbers.formatDecimal(payment.amount, 1, 2) + ' ' + summary.currency}"></td>
+                    <td><span th:text="${payment.status}" class="badge" th:classappend="${'badge-' + (payment.status == 'COMPLETED' ? 'success' : (payment.status == 'PENDING' ? 'warning' : (payment.status == 'FAILED' ? 'danger' : 'info')))}"></span></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div th:if="${#lists.size(summary.paymentDetails) > 5}" style="text-align: right; margin-top: 10px;">
+            <a href="#" style="color: #3498db; text-decoration: none;">View All Payments →</a>
+        </div>
+        
+        <div style="margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 4px;">
+            <h4 style="margin-top: 0;">System Status</h4>
+            <div style="display: flex; justify-content: space-between; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 200px; margin: 5px 0;">
+                    <div style="color: #27ae60;">●</div>
+                    <div>Payment Gateway</div>
+                    <div style="font-size: 12px; color: #7f8c8d;">Operational</div>
+                </div>
+                <div style="flex: 1; min-width: 200px; margin: 5px 0;">
+                    <div style="color: #27ae60;">●</div>
+                    <div>Bank Connection</div>
+                    <div style="font-size: 12px; color: #7f8c8d;">Connected</div>
+                </div>
+                <div style="flex: 1; min-width: 200px; margin: 5px 0;">
+                    <div style="color: #27ae60;">●</div>
+                    <div>Database</div>
+                    <div style="font-size: 12px; color: #7f8c8d;">Online</div>
+                </div>
+                <div style="flex: 1; min-width: 200px; margin: 5px 0;">
+                    <div style="color: #27ae60;">●</div>
+                    <div>Last Backup</div>
+                    <div style="font-size: 12px; color: #7f8c8d;" th:text="${#temporals.format(#temporals.createNow().minusHours(2), 'MMM d, yyyy HH:mm')}">Jun 20, 2025 06:00</div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; font-size: 12px; color: #7f8c8d; text-align: center;">
+            <p>This is an automated email. Please do not reply to this message.</p>
+            <p>© 2025 Shanthi Gears Limited. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

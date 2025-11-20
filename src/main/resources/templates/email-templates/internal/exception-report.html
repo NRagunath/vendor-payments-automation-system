@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{email-templates/internal/base-internal-email :: html}">
+<body>
+    <div th:fragment="content">
+        <h3>Payment Exception Report</h3>
+        <p>The following exceptions were encountered during payment processing.</p>
+        
+        <div class="alert alert-danger" th:if="${totalExceptions > 0}">
+            <h4 style="margin-top: 0;">Critical Issues Require Attention</h4>
+            <p><strong>Total Exceptions:</strong> <span th:text="${totalExceptions}"></span></p>
+            <div th:if="${severityCounts != null}">
+                <p th:each="severity : ${severityCounts}">
+                    <strong th:text="${severity.key} + ':'"></strong> 
+                    <span th:text="${severity.value}"></span>
+                </p>
+            </div>
+        </div>
+        
+        <h4>Exception Details</h4>
+        <table>
+            <thead>
+                <tr>
+                    <th>Reference</th>
+                    <th>Vendor</th>
+                    <th>Error</th>
+                    <th>Severity</th>
+                    <th>Timestamp</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="exception : ${exceptions}">
+                    <td th:text="${exception.paymentReference}"></td>
+                    <td th:text="${exception.vendorName} + ' (' + ${exception.vendorId} + ')'"></td>
+                    <td>
+                        <strong th:text="${exception.errorCode}"></strong><br>
+                        <small th:text="${exception.errorMessage}"></small>
+                    </td>
+                    <td>
+                        <span th:text="${exception.severity}" 
+                              class="badge" 
+                              th:classappend="${'badge-' + (exception.severity == 'CRITICAL' ? 'danger' : (exception.severity == 'HIGH' ? 'warning' : 'info'))}"></span>
+                    </td>
+                    <td th:text="${#temporals.format(exception.timestamp, 'dd MMM yyyy HH:mm')}"></td>
+                </tr>
+            </tbody>
+        </table>
+        
+        <div style="margin-top: 20px;" th:if="${exceptions.?[severity == 'CRITICAL'].size() > 0}">
+            <h4>Critical Issues Requiring Immediate Attention</h4>
+            <div th:each="exception : ${exceptions.?[severity == 'CRITICAL']}" class="alert alert-danger">
+                <p><strong>Reference:</strong> <span th:text="${exception.paymentReference}"></span></p>
+                <p><strong>Vendor:</strong> <span th:text="${exception.vendorName}"></span></p>
+                <p><strong>Error:</strong> <span th:text="${exception.errorMessage}"></span></p>
+                <p><strong>Suggested Action:</strong> <span th:text="${exception.suggestedAction}"></span></p>
+                <p th:if="${exception.assignedTo != null}"><strong>Assigned To:</strong> <span th:text="${exception.assignedTo}"></span></p>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <p>This report was generated on <span th:text="${#temporals.format(#temporals.createNow(), 'dd MMM yyyy HH:mm:ss')}"></span>.</p>
+            <p>Please review and take appropriate action for the exceptions listed above.</p>
+        </div>
+    </div>
+</body>
+</html>

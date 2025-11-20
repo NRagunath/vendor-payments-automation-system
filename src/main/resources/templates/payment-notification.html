@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Payment Notification</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            background-color: #f9f9f9;
+            padding: 30px;
+            color: #333;
+        }
+
+        h1, h2, h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        p {
+            margin: 5px 0 15px 0;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background-color: #fff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #f1f4f7;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .amount {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .tds-amount {
+            color: #d32f2f;
+        }
+        
+        tr.tds-row {
+            background-color: #fff9f9;
+        }
+        
+        tr.tds-row td {
+            border-top: 1px dashed #ffcdd2;
+            border-bottom: 1px dashed #ffcdd2;
+        }
+
+        .total-row {
+            background-color: #f9f9f9;
+            font-weight: bold;
+        }
+
+        .info-block {
+            background-color: #fff;
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        strong {
+            color: #2c3e50;
+        }
+
+        .footer {
+            font-size: 0.85em;
+            color: #666;
+            text-align: center;
+            margin-top: 40px;
+        }
+
+        hr {
+            border: 0;
+            height: 1px;
+            background: #ddd;
+            margin-top: 30px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Payment Notification</h1>
+    <p>Dear <span th:text="${vendor ?: 'Vendor'}">Vendor</span>,</p>
+
+    <div class="info-block">
+        <h2>Payment Details</h2>
+        <p><strong>Payment Date:</strong> <span th:text="${#temporals.format(#temporals.createNow(), 'dd MMMM yyyy')}">16 June 2025</span></p>
+        <p><strong>Reference:</strong> <span th:text="${referenceNumber ?: 'N/A'}">PMT250616</span></p>
+        <p><strong>Note:</strong> TDS has been deducted as per applicable rates and will be reflected in your Form 26AS.</p>
+    </div>
+
+    <div class="info-block">
+        <h3>Payment Items</h3>
+        <table>
+            <tr>
+                <th>Description</th>
+                <th>Invoice Number</th>
+                <th>Date</th>
+                <th class="amount">Amount (₹)</th>
+            </tr>
+            <!-- Original Invoice Row -->
+            <tr th:each="payment : ${payments}" 
+                th:if="${payments != null and !payments.empty and !payment.invoiceNumber.contains('-TDS-')}">
+                <td>Invoice Payment</td>
+                <td th:text="${payment.invoiceNumber}">INV-2024-001</td>
+                <td th:text="${payment.invoiceDate} ? ${#temporals.format(payment.invoiceDate, 'dd-MM-yyyy')} : 'N/A'">31-05-2025</td>
+                <td class="amount" th:text="'₹' + ${#numbers.formatDecimal(payment.amount, 1, 2, 'COMMA')}">₹100,000.00</td>
+            </tr>
+            <!-- TDS Deduction Row -->
+            <tr th:each="payment : ${payments}" 
+                th:if="${payments != null and !payments.empty and payment.invoiceNumber.contains('-TDS-')}"
+                style="background-color: #fff9f9;">
+                <td>TDS Deduction</td>
+                <td th:text="${payment.invoiceNumber}">INV-2024-TDS-001</td>
+                <td th:text="${payment.invoiceDate} ? ${#temporals.format(payment.invoiceDate, 'dd-MM-yyyy')} : 'N/A'">31-05-2025</td>
+                <td class="tds-amount" th:text="'-₹' + ${#numbers.formatDecimal(-payment.amount, 1, 2, 'COMMA')}">-₹2,000.00</td>
+            </tr>
+            <!-- Total Row -->
+            <tr class="total-row">
+                <td colspan="3" style="text-align: right; font-weight: bold;">Net Amount Payable:</td>
+                <td class="amount" style="font-weight: bold;" th:text="'₹' + ${totalAmount != null ? #numbers.formatDecimal(totalAmount, 1, 2, 'COMMA') : '0.00'}">₹98,000.00</td>
+            </tr>
+            <tr th:if="${payments == null or payments.empty}">
+                <td colspan="4" style="text-align: center; font-style: italic;">No payment details available</td>
+            </tr>
+            <tr class="total-row">
+                <td colspan="4" style="text-align: right;">Total Amount:</td>
+                <td class="amount" th:text="'₹' + ${totalAmount != null ? #numbers.formatDecimal(totalAmount, 1, 2, 'COMMA') : '0.00'}">₹98,000.00</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="info-block">
+        <h3>Bank Transfer Details</h3>
+        <p><strong>Beneficiary:</strong> <span th:text="${companyName ?: 'Shanthi Gears Limited'}">Shanthi Gears Limited</span></p>
+        <p><strong>Bank:</strong> <span th:text="${bankName ?: 'State Bank of India'}">State Bank of India</span></p>
+        <p><strong>Branch:</strong> <span th:text="${branchName ?: 'Industrial Finance Branch'}">Industrial Finance Branch</span></p>
+        <p><strong>Account Number:</strong> <span th:text="${accountNumber ?: '1234567890123'}">1234567890123</span></p>
+        <p><strong>IFSC Code:</strong> <span th:text="${ifscCode ?: 'SBIN0001234'}">SBIN0001234</span></p>
+        <p><strong>Account Type:</strong> <span th:text="${accountType ?: 'Current'}">Current</span></p>
+    </div>
+
+    <p>For any queries, please contact our accounts department:</p>
+    <p>
+        Email: <span th:text="${companyEmail ?: 'accounts@shanthigears.com'}">accounts@shanthigears.com</span><br>
+        Phone: <span th:text="${companyPhone ?: '+91 44 1234 5678'}">+91 44 1234 5678</span>
+    </p>
+
+    <p>Best regards,<br>
+    Accounts Payable Team<br>
+    <span th:text="${companyName ?: 'Shanthi Gears Limited'}">Shanthi Gears Limited</span></p>
+
+    <div class="footer">
+        <hr>
+        <p>This is an automated email. Please do not reply.</p>
+    </div>
+</body>
+</html>

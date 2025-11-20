@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{email-templates/internal/base-internal-email :: html}">
+<body>
+    <div th:fragment="content">
+        <h3>Action Items</h3>
+        <p>You have <strong th:text="${totalItems}"></strong> action items assigned to you or your team.</p>
+        
+        <div th:if="${#maps.isEmpty(itemsByAssignee)}" class="alert alert-info">
+            No action items found.
+        </div>
+        
+        <div th:unless="${#maps.isEmpty(itemsByAssignee)}">
+            <h4>Your Action Items</h4>
+            <div th:each="entry : ${itemsByAssignee}">
+                <h5>Assigned to: <span th:text="${entry.key}"></span> <small>(<span th:text="${#lists.size(entry.value)}"></span> items)</small></h5>
+                
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Due Date</th>
+                            <th>Category</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="item : ${entry.value}">
+                            <td>
+                                <strong th:text="${item.title}"></strong><br>
+                                <small th:text="${item.description}"></small>
+                            </td>
+                            <td>
+                                <span th:text="${item.priority}" 
+                                      class="badge" 
+                                      th:classappend="${'badge-' + (item.priority == 'HIGH' ? 'danger' : (item.priority == 'MEDIUM' ? 'warning' : 'info'))}">
+                                </span>
+                            </td>
+                            <td>
+                                <span th:text="${item.status}" 
+                                      class="badge" 
+                                      th:classappend="${'badge-' + (item.status == 'COMPLETED' ? 'success' : (item.status == 'IN_PROGRESS' ? 'info' : 'warning'))}">
+                                </span>
+                            </td>
+                            <td>
+                                <span th:if="${item.dueDate != null}" 
+                                      th:text="${#temporals.format(item.dueDate, 'dd MMM yyyy')}"
+                                      th:class="${#temporals.isBefore(item.dueDate, #temporals.createToday()) ? 'text-danger' : ''}">
+                                </span>
+                                <span th:unless="${item.dueDate != null}">-</span>
+                            </td>
+                            <td>
+                                <span th:text="${item.category}" class="badge badge-info"></span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div style="margin: 15px 0 30px 0;">
+                    <a href="#" class="button" style="background-color: #5bc0de;">View All Items</a>
+                </div>
+            </div>
+            
+            <h4>Summary by Status</h4>
+            <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                <div style="flex: 1; text-align: center; background-color: #f8f9fa; padding: 10px; border-radius: 4px;">
+                    <div style="font-size: 24px; font-weight: bold; color: #5cb85c;" th:text="${#lists.size(actionItems.?[status == 'OPEN'])}">0</div>
+                    <div>Open</div>
+                </div>
+                <div style="flex: 1; text-align: center; background-color: #f8f9fa; padding: 10px; border-radius: 4px;">
+                    <div style="font-size: 24px; font-weight: bold; color: #5bc0de;" th:text="${#lists.size(actionItems.?[status == 'IN_PROGRESS'])}">0</div>
+                    <div>In Progress</div>
+                </div>
+                <div style="flex: 1; text-align: center; background-color: #f8f9fa; padding: 10px; border-radius: 4px;">
+                    <div style="font-size: 24px; font-weight: bold; color: #f0ad4e;" th:text="${#lists.size(actionItems.?[status == 'PENDING'])}">0</div>
+                    <div>Pending</div>
+                </div>
+                <div style="flex: 1; text-align: center; background-color: #f8f9fa; padding: 10px; border-radius: 4px;">
+                    <div style="font-size: 24px; font-weight: bold; color: #5cb85c;" th:text="${#lists.size(actionItems.?[status == 'COMPLETED'])}">0</div>
+                    <div>Completed</div>
+                </div>
+            </div>
+        </div>
+        
+        <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 4px;">
+            <h4 style="margin-top: 0;">Need Help?</h4>
+            <p>If you have any questions about these action items, please contact your manager or the IT support team.</p>
+            <p>
+                <a href="mailto:it-support@shanthigears.com" style="color: #2980b9; text-decoration: none;">
+                    <strong>Contact IT Support</strong>
+                </a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

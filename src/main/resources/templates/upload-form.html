@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Vendor Payment Batch Upload</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+        .upload-container {
+            border: 2px dashed #3498db;
+            padding: 30px;
+            text-align: center;
+            border-radius: 8px;
+            margin: 20px 0;
+            background-color: #f8f9fa;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .btn {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #2980b9;
+        }
+        .btn:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        #file-info {
+            margin: 15px 0;
+            font-style: italic;
+            color: #7f8c8d;
+        }
+        #response {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .file-input {
+            display: none;
+        }
+        .file-label {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #e9ecef;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .file-label:hover {
+            background-color: #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <h1>Vendor Payment Batch Upload</h1>
+    
+    <div class="upload-container">
+        <h2>Upload Payment File</h2>
+        <p>Please select an Excel file (.xlsx or .xls) containing the payment details.</p>
+        
+        <form id="uploadForm" th:action="@{/api/v1/vendor-payments/batch-processing/process}" method="post" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="fileInput" class="file-label">Choose File</label>
+                <input type="file" id="fileInput" name="file" class="file-input" accept=".xlsx, .xls" required>
+                <div id="file-info">No file selected</div>
+            </div>
+            
+            <button type="submit" class="btn" id="uploadBtn">Upload and Process</button>
+        </form>
+        
+        <div id="response"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('fileInput');
+            const fileInfo = document.getElementById('file-info');
+            const uploadForm = document.getElementById('uploadForm');
+            const responseDiv = document.getElementById('response');
+            
+            // Update file info when a file is selected
+            fileInput.addEventListener('change', function() {
+                if (this.files.length > 0) {
+                    fileInfo.textContent = `Selected file: ${this.files[0].name}`;
+                } else {
+                    fileInfo.textContent = 'No file selected';
+                }
+            });
+            
+            // Handle form submission
+            uploadForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const uploadBtn = document.getElementById('uploadBtn');
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    showResponse('Please select a file first', 'error');
+                    return;
+                }
+                
+                const formData = new FormData(this);
+                uploadBtn.disabled = true;
+                uploadBtn.textContent = 'Processing...';
+                responseDiv.style.display = 'none';
+                
+                try {
+                    const response = await fetch(this.action, {
+                        method: 'POST',
+                        body: formData,
+                        credentials: 'same-origin',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+                    
+                    let data;
+                    try {
+                        data = await response.json();
+                    } catch (jsonError) {
+                        console.error('Error parsing JSON response:', jsonError);
+                        const text = await response.text();
+                        throw new Error(`Invalid server response: ${text.substring(0, 200)}...`);
+                    }
+                    
+                    if (!response.ok) {
+                        const errorDetails = data.message || 'No error details provided';
+                        console.error('Server error:', errorDetails);
+                        throw new Error(`Server error: ${errorDetails}`);
+                    }
+                    
+                    if (data.success) {
+                        showResponse('✅ File processed successfully! ' + (data.message || ''), 'success');
+                        console.log('Processing results:', data);
+                    } else {
+                        const errorMsg = data.message || 'Unknown error occurred';
+                        console.error('Processing error:', errorMsg);
+                        showResponse(`❌ Error: ${errorMsg}`, 'error');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    showResponse('Error: ' + (error.message || 'Failed to process file'), 'error');
+                } finally {
+                    uploadBtn.disabled = false;
+                    uploadBtn.textContent = 'Upload and Process';
+                }
+            });
+            
+            function showResponse(message, type) {
+                const responseDiv = document.getElementById('response');
+                responseDiv.textContent = message;
+                responseDiv.className = type;
+                responseDiv.style.display = 'block';
+                
+                // Auto-hide success messages after 5 seconds
+                if (type === 'success') {
+                    setTimeout(() => {
+                        responseDiv.style.display = 'none';
+                    }, 5000);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
