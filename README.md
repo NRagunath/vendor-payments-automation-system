@@ -199,4 +199,4 @@ Proprietary - All rights reserved.
 
 ## 📧 Contact
 
-For support or inquiries, please contact support@shanthigear.com
+For support or inquiries, please contact nragunathynatarajan@gmail.com
